@@ -311,82 +311,85 @@ for index, scenario in scenarios_df.iterrows():
     user_responses[scenario['scenario_id']] = user_response if user_response != "I don't know" else None
 
 
-# In[60]:
+# In[61]:
 
 
 # Add a submit button to trigger the calculation of the results
 if st.button("Submit"):
     
     with st.spinner('Wait for it...'):
-           
-        if selected_age == 'Select Your Age':
-            selected_age = 0
+        
+        if email:
+            if selected_age == 'Select Your Age':
+                selected_age = 0
 
-        if all(response is None for response in user_responses.values()):
-            st.error("No response selected. Please select at least one response.")
-        else:
-            # Calculate the number of correct and incorrect responses, and the score as a percentage of correct answers
-            total_questions = len(user_responses)
-            correct_answers = 0
-            incorrect_answers = 0
-            for scenario_id, user_response in user_responses.items():
-                response = responses_df[responses_df['scenario_id'] == scenario_id]
-                is_correct = response[response['is_correct'] == True]['response_option'].iloc[0]
-                if user_response is None:
-                    total_questions -= 1
-                elif user_response == is_correct:
-                    correct_answers += 1
+            if all(response is None for response in user_responses.values()):
+                st.error("No response selected. Please select at least one response.")
+            else:
+                # Calculate the number of correct and incorrect responses, and the score as a percentage of correct answers
+                total_questions = len(user_responses)
+                correct_answers = 0
+                incorrect_answers = 0
+                for scenario_id, user_response in user_responses.items():
+                    response = responses_df[responses_df['scenario_id'] == scenario_id]
+                    is_correct = response[response['is_correct'] == True]['response_option'].iloc[0]
+                    if user_response is None:
+                        total_questions -= 1
+                    elif user_response == is_correct:
+                        correct_answers += 1
+                    else:
+                        incorrect_answers += 1
+
+                score = correct_answers / total_questions * 100
+
+                # Check if user already exists in the op_survey_users table
+                query = f"SELECT * FROM op_survey_users WHERE email = '{email}'"
+                existing_user = pd.read_sql(query, engine)
+
+                if existing_user.empty:
+                    # Insert the new user into the op_survey_users table
+                    query = f"INSERT INTO op_survey_users (email, age, country) VALUES ('{email}', '{selected_age}', '{country}')"
+                    engine.execute(query)
+
+                    # Get the user_id for the newly created user
+                    query = f"SELECT id FROM op_survey_users WHERE email = '{email}'"
+                    user_id = pd.read_sql(query, engine).iloc[0]['id']
                 else:
-                    incorrect_answers += 1
+                    # Use the existing user_id
+                    user_id = existing_user.iloc[0]['id']
 
-            score = correct_answers / total_questions * 100
+                # Check if the user has already submitted this survey
+                query = f"SELECT * FROM antisemitism_knowledge_user_scores WHERE user_id = {user_id} AND survey_id = 2"
+                existing_response = pd.read_sql(query, engine)
 
-            # Check if user already exists in the op_survey_users table
-            query = f"SELECT * FROM op_survey_users WHERE email = '{email}'"
-            existing_user = pd.read_sql(query, engine)
+                if existing_response.empty:
+                    # Calculate the final score and insert it into the antisemitism_knowledge_user_scores table
+                    query = f"INSERT INTO antisemitism_knowledge_user_scores (user_id, survey_id, score, correct_answers, incorrect_answers, total_questions) VALUES ({user_id}, 2, {score}, {correct_answers}, {incorrect_answers}, {total_questions})"
+                    engine.execute(query)
 
-            if existing_user.empty:
-                # Insert the new user into the op_survey_users table
-                query = f"INSERT INTO op_survey_users (email, age, country) VALUES ('{email}', '{selected_age}', '{country}')"
-                engine.execute(query)
-
-                # Get the user_id for the newly created user
-                query = f"SELECT id FROM op_survey_users WHERE email = '{email}'"
-                user_id = pd.read_sql(query, engine).iloc[0]['id']
-            else:
-                # Use the existing user_id
-                user_id = existing_user.iloc[0]['id']
-
-            # Check if the user has already submitted this survey
-            query = f"SELECT * FROM antisemitism_knowledge_user_scores WHERE user_id = {user_id} AND survey_id = 2"
-            existing_response = pd.read_sql(query, engine)
-
-            if existing_response.empty:
-                # Calculate the final score and insert it into the antisemitism_knowledge_user_scores table
-                query = f"INSERT INTO antisemitism_knowledge_user_scores (user_id, survey_id, score, correct_answers, incorrect_answers, total_questions) VALUES ({user_id}, 2, {score}, {correct_answers}, {incorrect_answers}, {total_questions})"
-                engine.execute(query)
-
-                # Send the user an email with their score
-                #subject = "Your Antisemitism Knowledge Assessment Results"
-                #body = f"Hello,\n\nThank you for taking the Antisemitism Knowledge Assessment. Your score is {score:.2f}%.\n\nBest regards,\nThe Assessment Team"
-                #send_email(email, subject, body)
+                    # Send the user an email with their score
+                    #subject = "Your Antisemitism Knowledge Assessment Results"
+                    #body = f"Hello,\n\nThank you for taking the Antisemitism Knowledge Assessment. Your score is {score:.2f}%.\n\nBest regards,\nThe Assessment Team"
+                    #send_email(email, subject, body)
 
 
-                send_email(email, score, correct_answers, incorrect_answers, total_questions, len(user_responses) - total_questions)
+                    send_email(email, score, correct_answers, incorrect_answers, total_questions, len(user_responses) - total_questions)
 
-                st.success("Thsank you. Check your email for the results.")
-                #col1, col2 = st.columns(2) 
-                #with col1:
-                #    st.success("Results: "f"Score: {score:.2f}%")
+                    st.success("Thsank you. Check your email for the results.")
+                    #col1, col2 = st.columns(2) 
+                    #with col1:
+                    #    st.success("Results: "f"Score: {score:.2f}%")
 
-                #with col2:
-                #    st.success(f"Number of correct answers: [{correct_answers}].")
-                #    st.error(f"Number of incorrect answers: [{incorrect_answers}].")
-                #    st.info(f"Number of answered questions: [{total_questions}].")
-                #    st.warning(f"Number of unanswered questions: [{len(user_responses) - total_questions}].")
+                    #with col2:
+                    #    st.success(f"Number of correct answers: [{correct_answers}].")
+                    #    st.error(f"Number of incorrect answers: [{incorrect_answers}].")
+                    #    st.info(f"Number of answered questions: [{total_questions}].")
+                    #    st.warning(f"Number of unanswered questions: [{len(user_responses) - total_questions}].")
 
-            else:
-                st.warning("You have already submitted this survey. You cannot submit it more than once.")
+                else:
+                    st.warning("You have already submitted this survey. You cannot submit it more than once.")
+        else:
+            st.error("Please provide all required information.")
 
 
 # In[ ]:
