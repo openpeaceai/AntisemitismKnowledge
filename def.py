@@ -392,6 +392,19 @@ if st.button("Submit"):
             st.error("Please provide all required information.")
 
 
+# In[64]:
+
+
+st.markdown('##')
+st.markdown('---')
+col1, col2 = st.columns(2)
+with col1:
+   st.markdown(' :grey[2023 - openpeace.ai, all rights reserved.]', unsafe_allow_html=False)
+
+with col2:
+   st.markdown(' :grey[v - 0.1]', unsafe_allow_html=False)
+
+
 # In[ ]:
 
 
