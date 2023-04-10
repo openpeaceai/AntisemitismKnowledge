@@ -1,10 +1,11 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[50]:
+# In[73]:
 
 
 import streamlit as st
+from streamlit import config
 import pandas as pd
 pd.set_option('display.max_colwidth', None)
 from sqlalchemy import create_engine
@@ -24,21 +25,28 @@ degree_of_difficulty = 1
 survey_id = 2
 
 
-# In[51]:
+# In[74]:
 
 
 st.set_page_config(
     page_title="Antisemitism Knowledge Assessment",
     page_icon="☮️",
     layout="centered",
-    initial_sidebar_state="expanded",
     menu_items={
         'About': "https://openpeace.ai/about-us"
     }
 )
+# Define the target URL
+target_url = "https://openpeace.ai/discover-and-reflect/Antisemitism-Knowledge-Assessment"
+
+# Redirect users to the target URL
+if config.get_option("server.enableCORS"):
+    st.experimental_set_query_params(redirect=target_url)
+else:
+    st.write(f'<meta http-equiv="refresh" content="0;URL=\'{target_url}\'" />', unsafe_allow_html=True)
 
 
-# In[52]:
+# In[75]:
 
 
 # Add css to make text bigger
@@ -103,7 +111,7 @@ st.markdown(
 )
 
 
-# In[53]:
+# In[76]:
 
 
 def send_email(email, score, num_correct_answers, num_incorrect_answers, num_answered_questions, num_unanswered_questions):
@@ -191,7 +199,7 @@ def send_email(email, score, num_correct_answers, num_incorrect_answers, num_ans
         smtp.send_message(message)
 
 
-# In[54]:
+# In[77]:
 
 
 #with st.sidebar:
@@ -244,7 +252,7 @@ st.markdown('---')
 #            and personal development.', unsafe_allow_html=False)
 
 
-# In[55]:
+# In[78]:
 
 
 server = '184.168.194.64'
@@ -259,7 +267,7 @@ connection_str = f'mssql+pymssql://{username}:{password}@{server}/{database}'
 engine = create_engine(connection_str)
 
 
-# In[56]:
+# In[79]:
 
 
 # Read scenarios with the specified degree_of_difficulty
@@ -275,7 +283,7 @@ scenario_ids = scenarios_df['scenario_id'].tolist()
 responses_df = pd.read_sql(f"SELECT * FROM op_papa.antisemitism_knowledge_response WHERE scenario_id IN ({','.join(map(str, scenario_ids))})", engine)
 
 
-# In[57]:
+# In[80]:
 
 
 # Create the survey
@@ -283,14 +291,14 @@ st.markdown("##### Assessment (degree of difficulty: 1)")
 #st.markdown("##### Assessment")
 
 
-# In[58]:
+# In[81]:
 
 
 # Initialize user responses
 user_responses = {}
 
 
-# In[59]:
+# In[82]:
 
 
 for index, scenario in scenarios_df.iterrows():
@@ -311,7 +319,7 @@ for index, scenario in scenarios_df.iterrows():
     user_responses[scenario['scenario_id']] = user_response if user_response != "I don't know" else None
 
 
-# In[61]:
+# In[83]:
 
 
 # Add a submit button to trigger the calculation of the results
@@ -392,7 +400,7 @@ if st.button("Submit"):
             st.error("Please provide all required information.")
 
 
-# In[64]:
+# In[84]:
 
 
 st.markdown('##')
