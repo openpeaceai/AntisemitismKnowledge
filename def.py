@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[73]:
+# In[4]:
 
 
 import streamlit as st
@@ -25,7 +25,7 @@ degree_of_difficulty = 1
 survey_id = 2
 
 
-# In[74]:
+# In[5]:
 
 
 st.set_page_config(
@@ -46,7 +46,7 @@ else:
     st.write(f'<meta http-equiv="refresh" content="0;URL=\'{target_url}\'" />', unsafe_allow_html=True)
 
 
-# In[75]:
+# In[6]:
 
 
 # Add css to make text bigger
@@ -111,16 +111,25 @@ st.markdown(
 )
 
 
-# In[76]:
+# In[7]:
 
 
-def send_email(email, score, num_correct_answers, num_incorrect_answers, num_answered_questions, num_unanswered_questions):
+def send_email(email, score, num_correct_answers, num_incorrect_answers, num_answered_questions, num_unanswered_questions, incorrect_answers_info):
     # Create HTML message
     message = MIMEMultipart()
     message["From"] = "Surveys And Quizzes<SurveysAndQuizzes@openpeace.ai>"
     message["To"] = email
     message["Subject"] = "Antisemitism Knowledge Assessment Results"
 
+    incorrect_answers_text = ""
+    if incorrect_answers > 0:
+        incorrect_answers_text = "Here are the questions you answered incorrectly:\n"
+        for info in incorrect_answers_info:
+            incorrect_answers_text += f"Question {info['question_number']}: {info['question']}\n"
+            incorrect_answers_text += f"Your answer: {info['user_answer']}\n"
+            incorrect_answers_text += f"Correct answer: {info['correct_answer']}\n"
+            incorrect_answers_text += "------\n"
+            
     # Add image to the email
     #with open("https://img1.wsimg.com/isteam/ip/f8df9fda-2223-42be-a383-5d7d72e7c082/Openpeace%20Logo_Layout%201A.png/:/rs=w:230,h:38,cg:true,m/cr=w:230,h:38/qt=q:100/ll", "rb") as f:
     #    img_data = f.read()
@@ -147,6 +156,12 @@ def send_email(email, score, num_correct_answers, num_incorrect_answers, num_ans
         <li>Number of unanswered questions: {num_unanswered_questions}</li>
         <li><b>Score: {score:.2f}%</b></li>
         </ul>
+        
+        <p>
+        {incorrect_answers_text}
+        </p>
+        
+        
         <p>
         We invite you to <a href='https://openpeace.ai/m/create-account'>create an account</a> on our website, <a href='https://openpeace.ai'>openpeace.ai</a>, \
         to access additional resources and to stay up-to-date with our initiatives.<br>
@@ -199,7 +214,7 @@ def send_email(email, score, num_correct_answers, num_incorrect_answers, num_ans
         smtp.send_message(message)
 
 
-# In[77]:
+# In[8]:
 
 
 #with st.sidebar:
@@ -252,7 +267,7 @@ st.markdown('---')
 #            and personal development.', unsafe_allow_html=False)
 
 
-# In[78]:
+# In[9]:
 
 
 server = '184.168.194.64'
@@ -267,7 +282,7 @@ connection_str = f'mssql+pymssql://{username}:{password}@{server}/{database}'
 engine = create_engine(connection_str)
 
 
-# In[79]:
+# In[10]:
 
 
 # Read scenarios with the specified degree_of_difficulty
@@ -283,7 +298,7 @@ scenario_ids = scenarios_df['scenario_id'].tolist()
 responses_df = pd.read_sql(f"SELECT * FROM op_papa.antisemitism_knowledge_response WHERE scenario_id IN ({','.join(map(str, scenario_ids))})", engine)
 
 
-# In[80]:
+# In[11]:
 
 
 # Create the survey
@@ -291,14 +306,20 @@ st.markdown("##### Assessment (degree of difficulty: 1)")
 #st.markdown("##### Assessment")
 
 
-# In[81]:
+# In[12]:
 
 
 # Initialize user responses
 user_responses = {}
 
 
-# In[82]:
+# In[16]:
+
+
+incorrect_answers_info = []  # Add this line to store information about incorrect answers
+
+
+# In[17]:
 
 
 for index, scenario in scenarios_df.iterrows():
@@ -319,7 +340,7 @@ for index, scenario in scenarios_df.iterrows():
     user_responses[scenario['scenario_id']] = user_response if user_response != "I don't know" else None
 
 
-# In[83]:
+# In[18]:
 
 
 # Add a submit button to trigger the calculation of the results
@@ -347,6 +368,14 @@ if st.button("Submit"):
                         correct_answers += 1
                     else:
                         incorrect_answers += 1
+                        # Add this block to store incorrect answer information
+                        scenario_question = scenarios_df[scenarios_df['scenario_id'] == scenario_id]['scenario'].iloc[0]
+                        incorrect_answers_info.append({
+                            'question_number': list(user_responses.keys()).index(scenario_id) + 1,
+                            'question': scenario_question,
+                            'user_answer': user_response,
+                            'correct_answer': is_correct
+                        })
 
                 score = correct_answers / total_questions * 100
 
@@ -381,9 +410,19 @@ if st.button("Submit"):
                     #send_email(email, subject, body)
 
 
-                    send_email(email, score, correct_answers, incorrect_answers, total_questions, len(user_responses) - total_questions)
+                    send_email(email, score, correct_answers, incorrect_answers,total_questions, len(user_responses) - total_questions, incorrect_answers_info)
 
                     st.success("Thsank you. Check your email for the results.")
+                    # Display incorrect answers and correct answers for the user
+                
+                if incorrect_answers > 0:
+                    st.subheader("Incorrect Answers:")
+                    for info in incorrect_answers_info:
+                        st.write(f"Question {info['question_number']}: {info['question']}")
+                        st.write(f"Your answer: {info['user_answer']}")
+                        st.write(f"Correct answer: {info['correct_answer']}")
+                        st.write("------")
+                    
                     #col1, col2 = st.columns(2) 
                     #with col1:
                     #    st.success("Results: "f"Score: {score:.2f}%")
@@ -400,7 +439,7 @@ if st.button("Submit"):
             st.error("Please provide all required information.")
 
 
-# In[84]:
+# In[19]:
 
 
 st.markdown('##')
