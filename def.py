@@ -412,7 +412,7 @@ if st.button("Submit"):
 
                     send_email(email, score, correct_answers, incorrect_answers,total_questions, len(user_responses) - total_questions, incorrect_answers_info)
 
-                    st.success("Thsank you. Check your email for the results.")
+                    st.success("Thank you. Check your email for the results.")
                     # Display incorrect answers and correct answers for the user
                 
                 if incorrect_answers > 0:
