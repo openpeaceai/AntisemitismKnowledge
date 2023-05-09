@@ -111,7 +111,7 @@ st.markdown(
 )
 
 
-# In[7]:
+# In[20]:
 
 
 def send_email(email, score, num_correct_answers, num_incorrect_answers, num_answered_questions, num_unanswered_questions, incorrect_answers_info):
@@ -123,12 +123,12 @@ def send_email(email, score, num_correct_answers, num_incorrect_answers, num_ans
 
     incorrect_answers_text = ""
     if incorrect_answers > 0:
-        incorrect_answers_text = "Here are the questions you answered incorrectly:\n"
+        incorrect_answers_text = "Here are the questions you answered incorrectly:<br /><br />"
         for info in incorrect_answers_info:
-            incorrect_answers_text += f"Question {info['question_number']}: {info['question']}\n"
-            incorrect_answers_text += f"Your answer: {info['user_answer']}\n"
-            incorrect_answers_text += f"Correct answer: {info['correct_answer']}\n"
-            incorrect_answers_text += "------\n"
+            incorrect_answers_text += f"<b>Question {info['question_number']}:</b> {info['question']}<br />"
+            incorrect_answers_text += f"<b>Your answer:</b> {info['user_answer']}<br />"
+            incorrect_answers_text += f"<b>Correct answer:</b> {info['correct_answer']}<br />"
+            incorrect_answers_text += "<hr />"
             
     # Add image to the email
     #with open("https://img1.wsimg.com/isteam/ip/f8df9fda-2223-42be-a383-5d7d72e7c082/Openpeace%20Logo_Layout%201A.png/:/rs=w:230,h:38,cg:true,m/cr=w:230,h:38/qt=q:100/ll", "rb") as f:
@@ -214,7 +214,7 @@ def send_email(email, score, num_correct_answers, num_incorrect_answers, num_ans
         smtp.send_message(message)
 
 
-# In[8]:
+# In[21]:
 
 
 #with st.sidebar:
@@ -267,7 +267,7 @@ st.markdown('---')
 #            and personal development.', unsafe_allow_html=False)
 
 
-# In[9]:
+# In[22]:
 
 
 server = '184.168.194.64'
@@ -282,7 +282,7 @@ connection_str = f'mssql+pymssql://{username}:{password}@{server}/{database}'
 engine = create_engine(connection_str)
 
 
-# In[10]:
+# In[23]:
 
 
 # Read scenarios with the specified degree_of_difficulty
@@ -298,7 +298,7 @@ scenario_ids = scenarios_df['scenario_id'].tolist()
 responses_df = pd.read_sql(f"SELECT * FROM op_papa.antisemitism_knowledge_response WHERE scenario_id IN ({','.join(map(str, scenario_ids))})", engine)
 
 
-# In[11]:
+# In[24]:
 
 
 # Create the survey
@@ -306,20 +306,20 @@ st.markdown("##### Assessment (degree of difficulty: 1)")
 #st.markdown("##### Assessment")
 
 
-# In[12]:
+# In[25]:
 
 
 # Initialize user responses
 user_responses = {}
 
 
-# In[16]:
+# In[26]:
 
 
 incorrect_answers_info = []  # Add this line to store information about incorrect answers
 
 
-# In[17]:
+# In[27]:
 
 
 for index, scenario in scenarios_df.iterrows():
@@ -340,7 +340,7 @@ for index, scenario in scenarios_df.iterrows():
     user_responses[scenario['scenario_id']] = user_response if user_response != "I don't know" else None
 
 
-# In[18]:
+# In[28]:
 
 
 # Add a submit button to trigger the calculation of the results
@@ -439,7 +439,7 @@ if st.button("Submit"):
             st.error("Please provide all required information.")
 
 
-# In[19]:
+# In[29]:
 
 
 st.markdown('##')
